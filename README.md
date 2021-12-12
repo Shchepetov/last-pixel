@@ -8,7 +8,7 @@
 cd web
 python3 -m pip install -r requirements.txt
 ```
-# Local run
+## Local run
 **Only for test purposes!**
 ```console
 python3 manage.py runserver
