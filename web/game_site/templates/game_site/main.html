@@ -1,0 +1,108 @@
+<div class="container-fluid d-flex h-100 justify-content-center align-items-center p-0">
+	<div class="row bg-white shadow-sm">
+		 <div class="col border rounded p-4">
+		 	<div class="px-1">
+		 		<h3 class="text-center">WELCOME TO THE GAMEZONE</h3>
+				<p class="mb-0">
+					Time/Colour bank: <b><font color="green">{{ time_bank_eth|floatformat:9 }}</font>/<font color="green">{{ colour_bank_eth|floatformat:9 }}</font> eth</b>
+				</p>
+				<p> Paint price: <b>{{ move_price_eth|floatformat:9 }} eth </b></p>
+
+				<p class="mb-0"> Last paint</p>
+				<p class="mb-0"> at: <b>{{ last_changed }}</b></p>
+				<p class="mb-0"> by: <b>{{ last_changer }}</b></p>
+			</div>
+	    <div class="mx-1 my-2">
+		    	<button type="button" class="checkTimeButton btn btn-light btn-block" style="width:100%"> Check time winner</button>
+		   </div>
+			<form>
+			  <table class="d-flex justify-content-between shadow my-3">
+					{% for line in game_field %}
+						<tr>
+						  {% for cell in line %}
+							  <td class=" px-1">
+								<label>
+								  <input type="radio" name="cell" value="{{ cell.n }}">
+								  <div class="cell_radio_btn" style="background-color:{{ cell.colour }};">
+								  </div>
+								</label>
+							  </td>
+						  {% endfor %}
+						</tr>
+			    {% endfor %}
+			  </table>
+		  	<div class="d-flex justify-content-between px-1 pt-2 border border-light">
+			    {% for colour in colour_table %}
+			    	 {% if colour.0 != banned_colour %}
+				      <label>
+				  	    <input type="radio" name="colour" value="{{ colour.0 }}">
+					    	<div class="colour_radio_btn" style="background-color:{{ colour.1 }};"></div>
+				      </label>
+			      {% endif %}
+			    {% endfor %}
+		    	<button type="button"class="sendEthButton btn btn-success p-0 m-0"  style="height: 30px; width: 100px;"><p class="p-0 m-0"> Paint it!</p></button>
+		    </div>
+
+			</form>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	const sendEthButton = document.querySelector('.sendEthButton');
+	const checkTimeButton = document.querySelector('.checkTimeButton');
+
+	async function getAccount() {
+	  accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+	};
+
+	sendEthButton.addEventListener('click', () => {
+		getAccount()
+		var cell = document.querySelector('input[type="radio"][name="cell"]:checked').value;
+		var colour = document.querySelector('input[type="radio"][name="colour"]:checked').value;
+		var call_data = '{{ paint_method_hash }}' + parseInt(cell, 10).toString(16).padStart(64, '0') + parseInt(colour, 10).toString(16).padStart(64, '0');
+
+	  ethereum
+	    .request({
+	      method: 'eth_sendTransaction',
+	      params: [
+	        {
+	          from: ethereum.selectedAddress,
+	          to: '{{ game_address }}',
+	          value: "{{ move_price }}",
+	          data: call_data
+	        },
+	      ],
+	    })
+	    .then((txHash) => {
+	    	console.log(txHash);
+	    	location.reload();
+	    	})
+	    .catch((error) => {
+	    	console.error;
+	    	location.reload();
+	    	});
+		});
+
+	checkTimeButton.addEventListener('click', () => {
+		getAccount()
+	  ethereum
+	    .request({
+	      method: 'eth_sendTransaction',
+	      params: [
+	        {
+	          from: ethereum.selectedAddress,
+	          to: '{{ game_address }}',
+	          data: '{{ check_time_method_hash }}'
+	        },
+	      ],
+	    })
+	    .then((txHash) => {
+	    	console.log(txHash);
+	    	window.location.reload();
+	    	})
+	    .catch((error) => {
+	    	console.error;
+	    	window.location.reload();
+	    	});
+	  });
+</script>
