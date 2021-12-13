@@ -1,5 +1,7 @@
+import sys
 from brownie import Game, accounts
 
 def main():
-    acct = accounts.load('my_account')
-    Game.deploy({'from': acct})
+    acc_name = input("Deploy account alias: ")
+    acc = accounts.load(acc_name)
+    Game.deploy({'from': acc})
