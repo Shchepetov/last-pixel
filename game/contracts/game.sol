@@ -2,8 +2,10 @@
 pragma solidity ^0.8.7;
 
 import "./owner.sol";
+import {ShareMapping} from "./keymap.sol";
 
 contract Game is Owned {
+  using ShareMapping for ShareMapping.Map; 
   
   uint8 constant public FIELD_SIDE = 7;
   uint constant public TIME_OUT = 600;
@@ -21,7 +23,9 @@ contract Game is Owned {
 
   uint256 public lastChangeTime;
   address payable public lastChanger;
-    
+  
+  ShareMapping.Map[NUM_COLOURS] private paintHistory;
+
   struct Cell {
     uint8 colour;
     address payable lastChanger;
@@ -30,7 +34,7 @@ contract Game is Owned {
   Cell[NUM_CELLS] public gameField;
 
   event newMove(address indexed player, uint8 n, uint8 _colour);
-  event colourBankWin(address[NUM_CELLS] indexed player, uint amount);
+  event colourBankWin(address[] indexed players, uint amount);
   event timeBankWin(address indexed player, uint amount);
   event gameIsOverThanksToEveryone();
 
@@ -74,9 +78,12 @@ contract Game is Owned {
     require (msg.value == currentMovePrice, "Insufficient deposit");
     require (0 < _n && _n <= NUM_CELLS, "Cell number is out of range");
     require (0 < _colour && _colour <= NUM_COLOURS, "Incorrect colour number");
+    require (_colour != bannedColour, "This colour is banned");
 
     timeBank += msg.value / 100 * TIME_BANK_SHARE;
     colourBank +=  msg.value / 100 * (100 - TIME_BANK_SHARE);
+
+    _updateHistory(_n-1);
 
     lastChanger = payable(msg.sender);
     lastChangeTime = block.timestamp;
@@ -86,7 +93,14 @@ contract Game is Owned {
     emit newMove(msg.sender, _n, _colour);
 
     if (_fieldIsPlain())
-      _rewardColourBank();
+      _rewardColourBank(gameField[0].colour);
+  }
+
+  function _updateHistory(uint8 n) internal {
+    Cell memory lastPaint = gameField[n];
+    if (lastPaint.colour != bannedColour){
+      paintHistory[lastPaint.colour].increment(lastPaint.lastChanger);
+    }
   }
 
   function _fieldIsPlain() internal view returns (bool) {
@@ -103,27 +117,40 @@ contract Game is Owned {
     return true;
   }
 
-  function _rewardColourBank() internal {
-
+  function _rewardColourBank(uint8 colour) internal {
 
     require(address(this).balance >= colourBank, "Address: insufficient balance");
-    
-    uint bankShare = colourBank / NUM_CELLS;
-    address[NUM_CELLS] memory winners;
-    address payable winner;
+
+    for (uint8 i = 0; i < NUM_CELLS; i++){
+      _updateHistory(i);
+    }
+
+    uint colourBankCopy = colourBank;
+    uint bankSegment = colourBank / paintHistory[colour].shares;
+
+    address winner;
+    uint winner_prize;
     bool success;
-    for (uint8 i = 0; i < NUM_CELLS; i++) {
-      winner = gameField[i].lastChanger;
-      (success,) = winner.call{value:bankShare}('');
+
+    uint winners_count = paintHistory[colour].keys.length;
+    address[] memory winners = new address[](winners_count);
+
+    for (uint8 i = 0; i < winners_count; i++) {
+      winner = paintHistory[colour].keys[i];
+      winner_prize = paintHistory[colour].data[winner] * bankSegment;
+      colourBank -= winner_prize;
+
+      (success,) = winner.call{value: winner_prize}('');
 
       require(success, "Bank reward failed.");
 
       winners[i] = winner;
     }
-    colourBank -= bankShare * NUM_CELLS;
-    bannedColour = gameField[0].colour;
 
-    emit colourBankWin(winners, bankShare);
+    paintHistory[colour].clear();
+    bannedColour = colour;
+
+    emit colourBankWin(winners, colourBankCopy - colourBank);
   }
 
   function updateTimer() external payable checkTimeWinner {}
