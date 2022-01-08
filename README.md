@@ -9,7 +9,8 @@ cd web
 python3 -m pip install -r requirements.txt
 ```
 ## Local run
-**Only for test purposes!**
+🔴 **Only for test purposes!** 🔴  
+⚠️ **Python ver greater or equal to 3.10 is not supported!** ⚠️
 ```console
 python3 manage.py runserver
 ```
