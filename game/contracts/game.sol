@@ -18,6 +18,7 @@ contract Game is Owned {
 
   uint public timeBank = 0;
   uint public colourBank = 0;
+  mapping(address => uint) public retainedPrizes;
   uint public currentMovePrice = INIT_MOVE_PRICE;
   uint8 public bannedColour = 1;
 
@@ -62,10 +63,7 @@ contract Game is Owned {
 
   function _rewardTimeBank() internal {
 
-    require(address(this).balance >= timeBank, "Address: insufficient balance");
-
     (bool success,) = lastChanger.call{value:timeBank}('');
-  
     require(success, "Time reward failed.");
 
     emit timeBankWin(lastChanger, timeBank);
@@ -130,7 +128,6 @@ contract Game is Owned {
 
     address winner;
     uint winner_prize;
-    bool success;
 
     uint winners_count = paintHistory[colour].keys.length;
     address[] memory winners = new address[](winners_count);
@@ -138,12 +135,10 @@ contract Game is Owned {
     for (uint8 i = 0; i < winners_count; i++) {
       winner = paintHistory[colour].keys[i];
       winner_prize = paintHistory[colour].data[winner] * bankSegment;
+
+      retainedPrizes[winner] += winner_prize;
+
       colourBank -= winner_prize;
-
-      (success,) = winner.call{value: winner_prize}('');
-
-      require(success, "Bank reward failed.");
-
       winners[i] = winner;
     }
 
@@ -153,7 +148,16 @@ contract Game is Owned {
     emit colourBankWin(winners, colourBankCopy - colourBank);
   }
 
-  function updateTimer() external payable checkTimeWinner {}
+  function checkOutcome() external payable checkTimeWinner {
+
+    if (retainedPrizes[msg.sender] > 0){
+      (bool success,) = msg.sender.call{value:retainedPrizes[msg.sender]}('');
+
+      require(success, "Bank reward failed.");
+
+      delete retainedPrizes[msg.sender];
+    }
+  }
 
   function closeGame() public isOwner {
 
