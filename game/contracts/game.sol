@@ -11,10 +11,10 @@ contract Game is Owned {
   uint constant public TIME_OUT = 600;
   uint8 constant public NUM_COLOURS = 10;
 
-  uint8 constant TIME_BANK_SHARE = 80; // 80%
-  uint8 constant MOVE_PRICE_UPRATE = 103; // 103%
-  uint8 constant NUM_CELLS = FIELD_SIDE * FIELD_SIDE;
-  uint constant INIT_MOVE_PRICE = 10000000000000000; // 0.01 eth
+  uint8 constant private TIME_BANK_SHARE = 80; // 80%
+  uint8 constant private MOVE_PRICE_UPRATE = 103; // 103%
+  uint8 constant private NUM_CELLS = FIELD_SIDE * FIELD_SIDE;
+  uint constant private INIT_MOVE_PRICE = 10000000000000000; // 0.01 eth
 
   uint public timeBank = 0;
   uint public colourBank = 0;
@@ -34,10 +34,10 @@ contract Game is Owned {
 
   Cell[NUM_CELLS] public gameField;
 
-  event newMove(address indexed player, uint8 n, uint8 _colour);
-  event colourBankWin(address[] indexed players, uint amount);
-  event timeBankWin(address indexed player, uint amount);
-  event gameIsOverThanksToEveryone();
+  event NewMove(address indexed player, uint8 n, uint8 _colour);
+  event ColourBankWin(address[] indexed players, uint amount);
+  event TimeBankWin(address indexed player, uint amount);
+  event GameIsOverThanksToEveryone();
 
   constructor() {
 
@@ -63,10 +63,10 @@ contract Game is Owned {
 
   function _rewardTimeBank() internal {
 
-    (bool success,) = lastChanger.call{value:timeBank}('');
+    (bool success,) = lastChanger.call{value:timeBank}("");
     require(success, "Time reward failed.");
 
-    emit timeBankWin(lastChanger, timeBank);
+    emit TimeBankWin(lastChanger, timeBank);
 
     timeBank = 0;
   }
@@ -88,7 +88,7 @@ contract Game is Owned {
     gameField[_n-1] = Cell(_colour, lastChanger);
     currentMovePrice = currentMovePrice / 100 * MOVE_PRICE_UPRATE;
 
-    emit newMove(msg.sender, _n, _colour);
+    emit NewMove(msg.sender, _n, _colour);
 
     if (_fieldIsPlain())
       _rewardColourBank(gameField[0].colour);
@@ -127,31 +127,31 @@ contract Game is Owned {
     uint bankSegment = colourBank / paintHistory[colour].shares;
 
     address winner;
-    uint winner_prize;
+    uint winnerPrize;
 
-    uint winners_count = paintHistory[colour].keys.length;
-    address[] memory winners = new address[](winners_count);
+    uint winnersCount = paintHistory[colour].keys.length;
+    address[] memory winners = new address[](winnersCount);
 
-    for (uint8 i = 0; i < winners_count; i++) {
+    for (uint8 i = 0; i < winnersCount; i++) {
       winner = paintHistory[colour].keys[i];
-      winner_prize = paintHistory[colour].data[winner] * bankSegment;
+      winnerPrize = paintHistory[colour].data[winner] * bankSegment;
 
-      retainedPrizes[winner] += winner_prize;
+      retainedPrizes[winner] += winnerPrize;
 
-      colourBank -= winner_prize;
+      colourBank -= winnerPrize;
       winners[i] = winner;
     }
 
     paintHistory[colour].clear();
     bannedColour = colour;
 
-    emit colourBankWin(winners, colourBankCopy - colourBank);
+    emit ColourBankWin(winners, colourBankCopy - colourBank);
   }
 
   function checkOutcome() external payable checkTimeWinner {
 
     if (retainedPrizes[msg.sender] > 0){
-      (bool success,) = msg.sender.call{value:retainedPrizes[msg.sender]}('');
+      (bool success,) = msg.sender.call{value:retainedPrizes[msg.sender]}("");
 
       require(success, "Bank reward failed.");
 
@@ -161,7 +161,7 @@ contract Game is Owned {
 
   function closeGame() public isOwner {
 
-    emit gameIsOverThanksToEveryone();
+    emit GameIsOverThanksToEveryone();
     selfdestruct(owner); 
  }
 }
