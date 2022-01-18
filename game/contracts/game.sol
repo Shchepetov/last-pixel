@@ -16,6 +16,8 @@ contract Game is Owned {
   uint8 constant private NUM_CELLS = FIELD_SIDE * FIELD_SIDE;
   uint constant private INIT_MOVE_PRICE = 10000000000000000; // 0.01 eth
 
+  uint public index;
+  bool public isEnabled;
   uint public timeBank = 0;
   uint public colourBank = 0;
   mapping(address => uint) public retainedPrizes;
@@ -39,7 +41,14 @@ contract Game is Owned {
   event TimeBankWin(address indexed player, uint amount);
   event GameIsOverThanksToEveryone();
 
-  constructor() {
+  constructor(uint _index) payable {
+
+    index = _index;
+    isEnabled = true;
+    if (msg.value > 0){
+      timeBank = msg.value / 100 * TIME_BANK_SHARE;
+      colourBank = msg.value - timeBank;
+    }
 
     for (uint8 i = 0; i < NUM_CELLS; i++)
       gameField[i] = Cell(bannedColour, payable(address(this)));
@@ -159,9 +168,11 @@ contract Game is Owned {
     }
   }
 
-  function closeGame() public isOwner {
+  function closeGame() external isOwner {
 
     emit GameIsOverThanksToEveryone();
+
+    isEnabled = false;
     selfdestruct(owner); 
  }
 }
