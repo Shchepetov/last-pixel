@@ -25,4 +25,14 @@ contract Factory is Owned {
         
         emit GameDeleted(address(games[i]));
     }
+
+    function closeFactory() external isOwner {
+
+        for (uint i=0; i < games.length; i++){
+            if (games[i].isEnabled() == true){
+                games[i].closeGame();
+            }
+        }
+        selfdestruct(owner); 
+ }
 }
