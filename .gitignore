@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Hardhat
+solidity/artifacts/
+solidity/cache/
+solidity/node_modules/
+
