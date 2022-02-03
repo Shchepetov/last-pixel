@@ -5,7 +5,7 @@
 
 ## Installation
 ```console
-cd web
+cd ./web
 python3 -m pip install -r requirements.txt
 ```
 ## Local run
@@ -16,6 +16,8 @@ python3 manage.py runserver
 ```
 ## (Optinal) Smart-contract deployment
 ```console
-See later
+cd ./solidity
+npm install --save-dev hardhat
+npx hardhat run scripts/deploy.js
 ```
-Do not forget to change network name at `web/game_site/eth.py` after that.
+Do not forget to change network name and game address at `web/game_site/eth.py` after that.
