@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import "./game.sol";
 
-contract Factory is Owned {
+contract GameFactory is Owned {
 
     Game[] public games;
 

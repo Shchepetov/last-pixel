@@ -1,2 +1,0 @@
-cytoolz==0.11.0
-eth-brownie==1.16.4
